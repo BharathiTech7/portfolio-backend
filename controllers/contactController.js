@@ -1,9 +1,6 @@
 const Contact = require("../models/Contact");
 const sendEmail = require("../utils/sendEmail");
 
-// @desc    Save contact form message
-// @route   POST /api/contact
-// @access  Public
 const createContact = async (req, res) => {
   try {
     const { name, email, message } = req.body;
@@ -16,20 +13,12 @@ const createContact = async (req, res) => {
     }
 
     // 1️⃣ Save to DB
-    const contact = await Contact.create({
-      name,
-      email,
-      message,
-    });
+    const contact = await Contact.create({ name, email, message });
 
-    // 2️⃣ Try sending email (but don't break API if it fails)
-    try {
-      await sendEmail({ name, email, message });
-    } catch (emailError) {
-      console.error("Email sending failed:", emailError.message);
-    }
+    // 2️⃣ Send email (MANDATORY)
+    await sendEmail({ name, email, message });
 
-    // 3️⃣ Send response ONCE
+    // 3️⃣ Respond only if email succeeded
     return res.status(201).json({
       success: true,
       message: "Message sent successfully",
@@ -37,14 +26,11 @@ const createContact = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Contact create error:", error.message);
-
-    // safety check
-    if (res.headersSent) return;
+    console.error("Contact error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Server error",
+      message: "Failed to send message. Please try again later.",
     });
   }
 };
